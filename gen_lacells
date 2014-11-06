@@ -1,0 +1,150 @@
+#! /bin/bash
+#
+#   Quick and dirty script to build and install a new
+#   cell tower database on phone for microg/nogapps
+#   network location.
+#
+
+# For OpenCellID we need an API key
+API_KEY='put your OpenCellID API key string here'
+
+#
+#   Get latest cell tower data from Mozilla Location Services
+#
+echo 'Getting cell tower data from Mozilla Location Services'
+if [ -e towers_mozilla.csv.gz ] ; then
+    rm towers_mozilla.csv.gz
+fi
+if [ -e towers_mozilla.csv ] ; then
+    mv -f towers_mozilla.csv towers_opencellid.csv.bak
+fi
+NOW=`date -u "+%Y-%m-%d"`
+echo "${FNAME}"
+wget --no-check-certificate --output-document=towers_mozilla.csv.gz "https://d17pt8qph6ncyq.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
+gunzip towers_mozilla.csv.gz
+
+#
+#   Get latest cell tower data from opencellid
+#
+echo 'Getting cell tower data from Open Cell ID'
+if [ -e towers_opencellid.csv.gz ] ; then
+    rm towers_opencellid.csv.gz
+fi
+if [ -e towers_opencellid.csv ] ; then
+    mv -f towers_opencellid.csv towers_opencellid.csv.bak
+fi
+wget --output-document=towers_opencellid.csv.gz "http://opencellid.org/downloads/?apiKey=${API_KEY}&filename=cell_towers.csv.gz"
+gunzip towers_opencellid.csv.gz
+
+#
+#   Backup previous database and build new one.
+#
+#   Since Mozilla and OpenCellId have agreed to a common CSV format
+#   we can use the same import logic for both. Buried in the SQL is
+#   basically the following logic:
+#   1. Import towers known to OpenCellId
+#   2. Import towers known to Mozilla (will result in tower duplication)
+#   3. Using MCC value(s), delete towers not in North America
+#   4. Export towers in sorted CSV file
+#   5. Run merge_duplicate_towers PHP script to merge duplicate towers
+#   6. Import cleaned up tower information into final database
+#
+#   It might be possible to do the duplicate tower information merge
+#   in SQL but my SQL skills are not up to the task, thus the PHP
+#   intermediate step.
+#
+#   DATA CLEANUP
+#
+#   The database for the whole world is fairly large, so the line:
+#
+#       DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
+#
+#   Gets rid of stuff outside the United States. This can be removed if
+#   towers for the whole world are desired. Or it can be modified to
+#   select other countries as desired.
+#
+#   The opencellid database contains lots of towers with no coverage
+#   range information (aproxy for accuracy). And due to sampling issues,
+#   it is possible that low coverage range estimates are incorrect.
+#
+#   In addition, there are towers which have a coverage range reported
+#   to be 1000s of KM which is probably incorrect and do not help on
+#   locating the phone. So the expression:
+#
+#       min(max(range, 500),100000)
+#
+#   Is used to force each tower coverage range into the bounds of 0.5KM
+#   to 100KM coverage range. These can be adjusted as needed but the
+#   lower bound should be above zero to avoid divide by zero errors.
+#
+#
+# ===============================================
+# As of 6Sep2014, CSV file has following header:
+# radio,mcc,net,area,cell,unit,lon,lat,range,samples,changeable,created,updated,averageSignal
+# GSM,262,2,148,28260,,7.27268,50.68719,0,0,0,1207455686,1357937166,
+#
+# ===============================================
+#
+echo 'Building combined CSV file'
+if [ -e lacells.db ] ; then
+    mv -f lacells.db lacells.db.bak
+fi
+
+#
+# Create a merged CSV file with the columns we care about sorted by
+# MCC, MNM, LAC, and CID. Could do this in PHP or other language but
+# CSV import and output in sqlite3 make this pretty easy.
+#
+sqlite3 merge.db <<!
+CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, accuracy REAL, samples INTEGER);
+CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
+.mode csv
+.import towers_opencellid.csv cells_new
+INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+DROP TABLE cells_new;
+CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
+.mode csv
+.import towers_mozilla.csv cells_new
+INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+DROP TABLE cells_new;
+DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
+.headers on
+.mode csv
+.output merged.csv
+SELECT * FROM cells ORDER BY mcc, mnc, lac, cid;
+.quit
+!
+
+#
+#   Scan merged CSV file and combine entries for duplicate towers (lat,lon
+#   adjustment weighting based on sample sizes, etc.).
+#
+echo 'Merging duplicate tower records'
+./merge_duplicate_towers > towers.csv
+rm merge.db
+rm merged.csv
+
+#
+#   Create final database. If the indexes are not generated then lookups
+#   take a very long time on the phone. Even with the indexes, lookups are
+#   slow enough that the run time code on the phone will cache results.
+#
+echo 'Final Database creation'
+sqlite3 lacells.db <<!
+CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, accuracy REAL);
+.mode csv
+.import towers.csv cells
+CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
+CREATE INDEX _idx2 ON cells (lac, cid);
+VACUUM;
+.quit
+!
+rm towers.csv
+
+#
+#   Push the new database to the phone. Reboot may not
+#   be required but probably won't hurt.
+#
+echo 'Pushing database to phone'
+adb push lacells.db /sdcard/.nogapps/lacells.db
+#adb reboot

@@ -1,0 +1,53 @@
+#! /usr/bin/php
+<?php
+    $inName='merged.csv';
+
+    // Input 8 columns are:
+    // mcc,mnc,lac,cid,latitude,longitude,accuracy,samples
+
+    // Output 7 columns are:
+    // mcc,mnc,lac,cid,latitude,longitude,accuracy
+
+    function same_tower($rec1, $rec2) {
+        return ($rec1[0] == $rec2[0]) &&    // mcc
+               ($rec1[1] == $rec2[1]) &&    // mnc
+               ($rec1[2] == $rec2[2]) &&    // lac
+               ($rec1[3] == $rec2[3]);      // cid
+    }
+
+    $f_in = fopen($inName, "r");
+    $prev = fgetcsv($f_in);
+    $rec = fgetcsv($f_in);
+    while (($rec != null) && ($rec !== false)) {
+        if (same_tower($prev, $rec)) {
+            $wgt1 = $prev[7] + 0;   // samples
+            $wgt2 = $rec[7] + 0;    // samples
+            $tot_wgt = $wgt1 + $wgt2;
+            $prev[4] = (($prev[4]*$wgt1) + ($rec[4]*$wgt2))/$tot_wgt;   // lat
+            $prev[5] = (($prev[5]*$wgt1) + ($rec[5]*$wgt2))/$tot_wgt;   // lon
+            $prev[6] = max($prev[6], $rec[6]);                          // accuracy
+            $prev[7] += $rec[7];                                        // samples
+        } else {
+            echo $prev[0].','.
+                 $prev[1].','.
+                 $prev[2].','.
+                 $prev[3].','.
+                 $prev[4].','.
+                 $prev[5].','.
+                 $prev[6].
+                 PHP_EOL;
+            $prev=$rec;
+        }
+        $rec = fgetcsv($f_in);
+    }
+    if (($prev != null) && ($prev != false)) {
+        echo $prev[0].','.
+             $prev[1].','.
+             $prev[2].','.
+             $prev[3].','.
+             $prev[4].','.
+             $prev[5].','.
+             $prev[6].
+             PHP_EOL;
+    }
+?>
