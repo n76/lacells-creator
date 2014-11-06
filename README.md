@@ -32,3 +32,5 @@ How To Run
 Other Considerations
 ====================
 The OpenCellId project limits downloads to one per day per API key. So this script will only run correctly the first time it is run per day.
+
+Script in repository eliminates all tower information for areas outside of the United States of America. You may want to edit that to suit other purposes. Comments in gen_lacells describe the changes needed.
