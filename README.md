@@ -23,8 +23,10 @@ The gen_lacells script needs to be edited to use your OpenCellId API key.
 1. Plug phone into computer using USB cable. Phone should have development options enabled to the computer can use adb to push the final file to the phone.
 2. From the bash shell prompt enter:
 
+```
 	cd gen_lacells_directory
 	./gen_lacells
+```
 
 ### Other Considerations
 
