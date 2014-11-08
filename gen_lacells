@@ -96,16 +96,16 @@ fi
 # CSV import and output in sqlite3 make this pretty easy.
 #
 sqlite3 merge.db <<!
-CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, accuracy REAL, samples INTEGER);
+CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
 .import towers_opencellid.csv cells_new
-INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
 .import towers_mozilla.csv cells_new
-INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
 DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
 .headers on
@@ -131,7 +131,7 @@ rm merged.csv
 #
 echo 'Final Database creation'
 sqlite3 lacells.db <<!
-CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, accuracy REAL);
+CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL);
 .mode csv
 .import towers.csv cells
 CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
