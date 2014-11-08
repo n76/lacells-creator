@@ -7,8 +7,7 @@ The μg Project at https://github.com/microg is building a number of open source
 
 The database is fairly old now so the scripts on this page will generate a new database and place it on the phone. The database generated with this script will have an additional field not used by NetworkLocation but used on some other software I have written.
 
-Requirements
-============
+### Requirements
 
 1. bash - Main script is written in bash
 2. wget - Used to pull CSV files from OpenCellId and Mozilla Location Services
@@ -17,20 +16,18 @@ Requirements
 5. PHP - Command line script written in PHP is used to combine tower information that is duplicated between OpenCellId and Mozilla
 6. adb - Used to push database file to the phone.
 
-Setup
-=====
+### Setup
 The gen_lacells script needs to be edited to use your OpenCellId API key.
 
-How To Run
-==========
+### How To Run
 1. Plug phone into computer using USB cable. Phone should have development options enabled to the computer can use adb to push the final file to the phone.
 2. From the bash shell prompt enter:
 
-	cd [directory gen_lacells is located in>]
+	cd gen_lacells_directory
 	./gen_lacells
 
-Other Considerations
-====================
+### Other Considerations
+
 The OpenCellId project limits downloads to one per day per API key. So this script will only run correctly the first time it is run per day.
 
 Script in repository eliminates all tower information for areas outside of the United States of America. You may want to edit that to suit other purposes. Comments in gen_lacells describe the changes needed.
