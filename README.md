@@ -33,3 +33,9 @@ The gen_lacells script needs to be edited to use your OpenCellId API key.
 The OpenCellId project limits downloads to one per day per API key. So this script will only run correctly the first time it is run per day.
 
 Script in repository eliminates all tower information for areas outside of the United States of America. You may want to edit that to suit other purposes. Comments in gen_lacells describe the changes needed.
+
+### Final Note
+
+19Dec2014: If you need a lacells.db file for use by my gsm-location backend located at https://github.com/n76/Local-GSM-Backend then you can use the settings menu for that backend to generate the database on the phone with no external script.
+
+It is significantly faster to generate the database file on a laptop or desktop computer but more convenient to generate it on the phone so I am leaving this script available.
