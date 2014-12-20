@@ -23,7 +23,9 @@
     while (($rec != null) && ($rec !== false)) {
         if (same_tower($prev, $rec)) {
             $wgt1 = $prev[8] + 0;   // samples
+            if ($wgt1 < 1) $wgt1 = 1;
             $wgt2 = $rec[8] + 0;    // samples
+            if ($wgt2 < 1) $wgt2 = 1;
             $tot_wgt = $wgt1 + $wgt2;
             $prev[4] = (($prev[4]*$wgt1) + ($rec[4]*$wgt2))/$tot_wgt;   // lat
             $prev[5] = (($prev[5]*$wgt1) + ($rec[5]*$wgt2))/$tot_wgt;   // lon
