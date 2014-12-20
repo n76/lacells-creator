@@ -29,6 +29,7 @@
             $tot_wgt = $wgt1 + $wgt2;
             $prev[4] = (($prev[4]*$wgt1) + ($rec[4]*$wgt2))/$tot_wgt;   // lat
             $prev[5] = (($prev[5]*$wgt1) + ($rec[5]*$wgt2))/$tot_wgt;   // lon
+            $prev[6] = (($prev[6]*$wgt1) + ($rec[6]*$wgt2))/$tot_wgt;   // elevation
             $prev[7] = max($prev[7], $rec[7]);                          // accuracy
             $prev[8] += $rec[8];                                        // samples
         } else {
