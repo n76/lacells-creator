@@ -27,6 +27,14 @@ The gen_lacells script needs to be edited to use your OpenCellId API key.
 	cd gen_lacells_directory
 	./gen_lacells
 ```
+or
+
+```
+	cd gen_lacells_directory
+	./gen_lacells_merged
+```
+
+The gen_lacells_merged version of the script will merge duplicate tower information where both OpenCellID and Mozilla Location Services have information on the same tower. The gen_lacells script will leave the duplicates in place.
 
 ### Other Considerations
 

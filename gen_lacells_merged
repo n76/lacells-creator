@@ -19,9 +19,8 @@ if [ -e towers_mozilla.csv ] ; then
     mv -f towers_mozilla.csv towers_opencellid.csv.bak
 fi
 NOW=`date -u "+%Y-%m-%d"`
-FNAME="https://d17pt8qph6ncyq.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
 echo "${FNAME}"
-wget --no-check-certificate --output-document=towers_mozilla.csv.gz "${FNAME}"
+wget --no-check-certificate --output-document=towers_mozilla.csv.gz "https://d17pt8qph6ncyq.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
 gunzip towers_mozilla.csv.gz
 
 #
@@ -92,9 +91,11 @@ if [ -e lacells.db ] ; then
 fi
 
 #
-# Create a merged CSV file
+# Create a merged CSV file with the columns we care about sorted by
+# MCC, MNM, LAC, and CID. Could do this in PHP or other language but
+# CSV import and output in sqlite3 make this pretty easy.
 #
-sqlite3 lacells.db <<!
+sqlite3 merge.db <<!
 CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
@@ -107,11 +108,38 @@ CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, c
 INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
 DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
+.headers on
+.mode csv
+.output merged.csv
+SELECT * FROM cells ORDER BY mcc, mnc, lac, cid;
+.quit
+!
+
+#
+#   Scan merged CSV file and combine entries for duplicate towers (lat,lon
+#   adjustment weighting based on sample sizes, etc.).
+#
+echo 'Merging duplicate tower records'
+./merge_duplicate_towers > towers.csv
+rm merge.db
+rm merged.csv
+
+#
+#   Create final database. If the indexes are not generated then lookups
+#   take a very long time on the phone. Even with the indexes, lookups are
+#   slow enough that the run time code on the phone will cache results.
+#
+echo 'Final Database creation'
+sqlite3 lacells.db <<!
+CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER );
+.mode csv
+.import towers.csv cells
 CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
 CREATE INDEX _idx2 ON cells (lac, cid);
 VACUUM;
 .quit
 !
+# rm towers.csv
 
 #
 #   Push the new database to the phone. Reboot may not

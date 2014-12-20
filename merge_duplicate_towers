@@ -2,11 +2,13 @@
 <?php
     $inName='merged.csv';
 
-    // Input 8 columns are:
-    // mcc,mnc,lac,cid,latitude,longitude,accuracy,samples
+    // Input 9 columns are:
+    // mcc,mnc,lac,cid,latitude,longitude,elevation,accuracy,samples
+    // 0   1   2   3   4        5         6         7        8
 
-    // Output 7 columns are:
-    // mcc,mnc,lac,cid,latitude,longitude,accuracy
+    // Output 9 columns are:
+    // mcc,mnc,lac,cid,latitude,longitude,elevation,accuracy,samples
+    // 0   1   2   3   4        5         6         7        8
 
     function same_tower($rec1, $rec2) {
         return ($rec1[0] == $rec2[0]) &&    // mcc
@@ -20,12 +22,11 @@
     $rec = fgetcsv($f_in);
     while (($rec != null) && ($rec !== false)) {
         if (same_tower($prev, $rec)) {
-            $wgt1 = $prev[7] + 0;   // samples
-            $wgt2 = $rec[7] + 0;    // samples
+            $wgt1 = $prev[8] + 0;   // samples
+            $wgt2 = $rec[8] + 0;    // samples
             $tot_wgt = $wgt1 + $wgt2;
             $prev[4] = (($prev[4]*$wgt1) + ($rec[4]*$wgt2))/$tot_wgt;   // lat
             $prev[5] = (($prev[5]*$wgt1) + ($rec[5]*$wgt2))/$tot_wgt;   // lon
-            $prev[6] = ($prev[6] + $rec[6])/2;                          // elevation
             $prev[7] = max($prev[7], $rec[7]);                          // accuracy
             $prev[8] += $rec[8];                                        // samples
         } else {
@@ -35,8 +36,9 @@
                  $prev[3].','.                  // cid
                  $prev[4].','.                  // lat
                  $prev[5].','.                  // lgn
-                 $prev[6].','.                  // elev
-                 $prev[7].                      // accuracy
+                 $prev[6].','.                  // elevation
+                 $prev[7].','.                  // accuracy
+                 $prev[8].                      // samples
                  PHP_EOL;
             $prev=$rec;
         }
@@ -49,8 +51,9 @@
              $prev[3].','.                      // cid
              $prev[4].','.                      // lat
              $prev[5].','.                      // lng
-             $prev[7].','.                      // elev
-             $prev[7].                          // accuracy
+             $prev[6].','.                      // elevation
+             $prev[7].','.                      // accuracy
+             $prev[8].                          // samples
              PHP_EOL;
     }
 ?>
