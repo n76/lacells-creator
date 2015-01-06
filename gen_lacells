@@ -46,13 +46,6 @@ gunzip towers_opencellid.csv.gz
 #   1. Import towers known to OpenCellId
 #   2. Import towers known to Mozilla (will result in tower duplication)
 #   3. Using MCC value(s), delete towers not in North America
-#   4. Export towers in sorted CSV file
-#   5. Run merge_duplicate_towers PHP script to merge duplicate towers
-#   6. Import cleaned up tower information into final database
-#
-#   It might be possible to do the duplicate tower information merge
-#   in SQL but my SQL skills are not up to the task, thus the PHP
-#   intermediate step.
 #
 #   DATA CLEANUP
 #
@@ -92,7 +85,7 @@ if [ -e lacells.db ] ; then
 fi
 
 #
-# Create a merged CSV file
+# Create a CSV file
 #
 sqlite3 lacells.db <<!
 CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);

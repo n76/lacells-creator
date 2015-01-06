@@ -47,10 +47,6 @@ gunzip towers_opencellid.csv.gz
 #	3. Merge towers with weighted average values
 #   4. Using MCC value(s), delete towers not in North America
 #
-#   It might be possible to do the duplicate tower information merge
-#   in SQL but my SQL skills are not up to the task, thus the PHP
-#   intermediate step.
-#
 #   DATA CLEANUP
 #
 #   The database for the whole world is fairly large, so the line:
@@ -97,7 +93,7 @@ sqlite3 merge.db <<!
 PRAGMA synchronous = OFF;
 PRAGMA journal_mode = OFF;
 CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);
-CREATE TEMP TABLE cells_weighted AS SELECT * FROM cells; 
+CREATE TEMP TABLE cells_weighted AS SELECT * FROM cells;
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
 .import towers_opencellid.csv cells_new
