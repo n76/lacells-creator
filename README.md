@@ -13,8 +13,7 @@ The database is fairly old now so the scripts on this page will generate a new d
 2. wget - Used to pull CSV files from OpenCellId and Mozilla Location Services
 3. OpenCellID API Key - Needed to pull CSV files from OpenCellID. Get one for free at http://wiki.opencellid.org/wiki/How_to_join
 4. sqlite3 - Used to generate the actual database for the phone
-5. PHP - Command line script written in PHP is used to combine tower information that is duplicated between OpenCellId and Mozilla
-6. adb - Used to push database file to the phone.
+5. adb - Used to push database file to the phone.
 
 ### Setup
 The gen_lacells script needs to be edited to use your OpenCellId API key.
