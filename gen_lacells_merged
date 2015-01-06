@@ -42,12 +42,10 @@ gunzip towers_opencellid.csv.gz
 #   Since Mozilla and OpenCellId have agreed to a common CSV format
 #   we can use the same import logic for both. Buried in the SQL is
 #   basically the following logic:
-#   1. Import towers known to OpenCellId
-#   2. Import towers known to Mozilla (will result in tower duplication)
-#   3. Using MCC value(s), delete towers not in North America
-#   4. Export towers in sorted CSV file
-#   5. Run merge_duplicate_towers PHP script to merge duplicate towers
-#   6. Import cleaned up tower information into final database
+#   1. Import towers known to OpenCellId with weighted values
+#   2. Import towers known to Mozilla with weighted values (will result in tower duplication)
+#	3. Merge towers with weighted average values
+#   4. Using MCC value(s), delete towers not in North America
 #
 #   It might be possible to do the duplicate tower information merge
 #   in SQL but my SQL skills are not up to the task, thus the PHP
@@ -96,50 +94,28 @@ fi
 # CSV import and output in sqlite3 make this pretty easy.
 #
 sqlite3 merge.db <<!
+PRAGMA synchronous = OFF;
+PRAGMA journal_mode = OFF;
 CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);
+CREATE TEMP TABLE cells_weighted AS SELECT * FROM cells; 
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
 .import towers_opencellid.csv cells_new
-INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+INSERT INTO cells_weighted SELECT mcc, mnc, lac, cellId, long*max(1,samples), lat*max(1,samples), -1*max(1,samples), min(max(range, 500),100000)*max(1,samples), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
 CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, cellId INTEGER, unit TEXT, long REAL, lat REAL, range INTEGER, samples INTEGER, changeable BOOL, created INTEGER, updated INTEGER, averageSignalStrength INTEGER);
 .mode csv
 .import towers_mozilla.csv cells_new
-INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
+INSERT INTO cells_weighted SELECT mcc, mnc, lac, cellId, long*max(1,samples), lat*max(1,samples), -1*max(1,samples), min(max(range, 500),100000)*max(1,samples), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
+INSERT INTO cells SELECT mcc, mnc, lac, cid, SUM(longitude)/SUM(samples), SUM(latitude)/SUM(samples), SUM(altitude)/SUM(samples), SUM(accuracy)/SUM(samples), SUM(samples) FROM cells_weighted GROUP BY mcc, mnc, lac, cid;
+DROP TABLE cells_weighted;
 DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
-.headers on
-.mode csv
-.output merged.csv
-SELECT * FROM cells ORDER BY mcc, mnc, lac, cid;
-.quit
-!
-
-#
-#   Scan merged CSV file and combine entries for duplicate towers (lat,lon
-#   adjustment weighting based on sample sizes, etc.).
-#
-echo 'Merging duplicate tower records'
-./merge_duplicate_towers > towers.csv
-rm merge.db
-rm merged.csv
-
-#
-#   Create final database. If the indexes are not generated then lookups
-#   take a very long time on the phone. Even with the indexes, lookups are
-#   slow enough that the run time code on the phone will cache results.
-#
-echo 'Final Database creation'
-sqlite3 lacells.db <<!
-CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER );
-.mode csv
-.import towers.csv cells
 CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
 CREATE INDEX _idx2 ON cells (lac, cid);
 VACUUM;
 .quit
 !
-# rm towers.csv
 
 #
 #   Push the new database to the phone. Reboot may not
