@@ -89,7 +89,7 @@ fi
 # MCC, MNM, LAC, and CID. Could do this in PHP or other language but
 # CSV import and output in sqlite3 make this pretty easy.
 #
-sqlite3 merge.db <<!
+sqlite3 lacells.db <<!
 PRAGMA synchronous = OFF;
 PRAGMA journal_mode = OFF;
 CREATE TABLE cells(mcc INTEGER, mnc INTEGER, lac INTEGER, cid INTEGER, longitude REAL, latitude REAL, altitude REAL, accuracy REAL, samples INTEGER);
