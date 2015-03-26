@@ -8,6 +8,9 @@
 # For OpenCellID we need an API key
 API_KEY='put your OpenCellID API key string here'
 
+# Warn user about deleting of cells
+echo "This script automatically deletes cells that are not in North America. If you don't want this to happen, delete or modify the line 'DELETE FROM cells WHERE mcc...'"
+
 #
 #   Get latest cell tower data from Mozilla Location Services
 #
