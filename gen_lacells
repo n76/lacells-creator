@@ -128,6 +128,21 @@ VACUUM;
 #   Push the new database to the phone. Reboot may not
 #   be required but probably won't hurt.
 #
-echo 'Pushing database to phone'
-adb push lacells.db /sdcard/.nogapps/lacells.db
-#adb reboot
+if [[ $AUTO_PUSH -eq 1 ]]; then
+  ready='y'
+else
+  read -n 1 -p "Ready to push the database to your device? (y/n)" ready
+  echo
+  ready=$(echo $ready | tr [:upper:] [:lower:])
+fi
+
+if [[ "${ready}" != "y" ]]; then
+  echo "Not pushing the database. You can do so manually, executing"
+  echo "   adb push lacells.db /sdcard/.nogapps/lacells.db"
+  echo
+  exit
+else
+  echo 'Pushing database to phone'
+  adb push lacells.db /sdcard/.nogapps/lacells.db
+  #adb reboot
+fi

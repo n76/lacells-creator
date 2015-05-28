@@ -7,3 +7,8 @@ API_KEY='put your OpenCellID API key string here'
 
 # MCC="228,232,262" # DACH (Switzerland, Austria, Germany)
 MCC="310,311"       # USA
+
+
+# Shall the resulting DB file be pushed to the device automatically (1), or do you
+# wish to be prompted for that (0)?
+AUTO_PUSH=1
