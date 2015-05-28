@@ -5,11 +5,26 @@
 #   network location.
 #
 
-# For OpenCellID we need an API key
-API_KEY='put your OpenCellID API key string here'
+# Configure the cell database creator in gen_lacells_conf first
+# An example file can be found in gen_lacells_conf.sample
 
-# Warn user about deleting of cells
-echo "This script automatically deletes cells that are not in North America. If you don't want this to happen, delete or modify the line 'DELETE FROM cells WHERE mcc...'"
+if [[ ! -f gen_lacells_conf ]]; then
+  echo
+  echo 'You have to create your config file first.'
+  echo 'An example config can be found as gen_lacells_conf.sample'
+  echo 'Copy that to gen_lacells_conf and edit it with your data.'
+  echo
+  exit
+fi
+
+. ./gen_lacells_conf
+
+# Shall we restrict the resulting database to configured MCCs?
+if [[ -z "${MCC}" ]]; then
+  PURGE=""
+else
+  PURGE="DELETE FROM cells WHERE mcc NOT IN (${MCC});"
+fi
 
 #
 #   Get latest cell tower data from Mozilla Location Services
@@ -102,7 +117,7 @@ CREATE TEMP TABLE cells_new(radio TEXT, mcc INTEGER, mnc INTEGER, lac INTEGER, c
 .import towers_mozilla.csv cells_new
 INSERT INTO cells SELECT mcc, mnc, lac, cellid, long, lat, -1, min(max(range, 500),100000), max(1,samples) FROM cells_new;
 DROP TABLE cells_new;
-DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
+${PURGE}
 CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
 CREATE INDEX _idx2 ON cells (lac, cid);
 VACUUM;
@@ -113,6 +128,21 @@ VACUUM;
 #   Push the new database to the phone. Reboot may not
 #   be required but probably won't hurt.
 #
-echo 'Pushing database to phone'
-adb push lacells.db /sdcard/.nogapps/lacells.db
-#adb reboot
+if [[ $AUTO_PUSH -eq 1 ]]; then
+  ready='y'
+else
+  read -n 1 -p "Ready to push the database to your device? (y/n)" ready
+  echo
+  ready=$(echo $ready | tr [:upper:] [:lower:])
+fi
+
+if [[ "${ready}" != "y" ]]; then
+  echo "Not pushing the database. You can do so manually, executing"
+  echo "   adb push lacells.db /sdcard/.nogapps/lacells.db"
+  echo
+  exit
+else
+  echo 'Pushing database to phone'
+  adb push lacells.db /sdcard/.nogapps/lacells.db
+  #adb reboot
+fi
