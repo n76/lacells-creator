@@ -1,2 +1,7 @@
 .DS_Store
+gen_lacells_conf
+*.bak
+*,db
+*.csv
+*.gz
 
