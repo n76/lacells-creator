@@ -5,9 +5,10 @@
 #   network location.
 #
 
+#
 # Configure the cell database creator in gen_lacells_conf first
 # An example file can be found in gen_lacells_conf.sample
-
+#
 if [[ ! -f gen_lacells_conf ]]; then
   echo
   echo 'You have to create your config file first.'
@@ -19,7 +20,9 @@ fi
 
 . ./gen_lacells_conf
 
+#
 # Shall we restrict the resulting database to configured MCCs?
+#
 if [[ -z "${MCC}" ]]; then
   PURGE=""
 else
@@ -63,17 +66,12 @@ gunzip towers_opencellid.csv.gz
 #   basically the following logic:
 #   1. Import towers known to OpenCellId
 #   2. Import towers known to Mozilla (will result in tower duplication)
-#   3. Using MCC value(s), delete towers not in North America
+#   3. Using MCC value(s), delete towers as per user config
 #
 #   DATA CLEANUP
 #
-#   The database for the whole world is fairly large, so the line:
-#
-#       DELETE FROM cells WHERE mcc != 310 AND mcc != 311;
-#
-#   Gets rid of stuff outside the United States. This can be removed if
-#   towers for the whole world are desired. Or it can be modified to
-#   select other countries as desired.
+#   The database for the whole world is fairly large, so the user can
+#   define to purge unwanted areas (see gen_lacells_config)
 #
 #   The opencellid database contains lots of towers with no coverage
 #   range information (aproxy for accuracy). And due to sampling issues,
