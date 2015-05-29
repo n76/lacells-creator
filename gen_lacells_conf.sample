@@ -3,7 +3,9 @@ API_KEY='put your OpenCellID API key string here'
 
 
 # MCCs to use. This is a comma-separated list of country codes to restrict the
-# resulting database to. Use an empty string if you wish the entire world covered.
+# resulting database to. Use an empty string if you wish the entire world
+# covered. A list of available MCC values can be found e.g.
+# at Wikipedia: https://en.wikipedia.org/wiki/Mobile_country_code
 
 # MCC="228,232,262" # DACH (Switzerland, Austria, Germany)
 MCC="310,311"       # USA
