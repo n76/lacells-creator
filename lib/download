@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Download cell tower databases from OpenCellID & Mozilla Location Service
+#
+# You need to set API_KEY to an OpenCellID API key
+# Make sure you've sourced `config` and `util` before running any function.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+# Downloads cell towers file for source id to towers_<source_id>.csv
+# Usage: _download_from <source_id> <url>
+_download_from() {
+	CSV="${DATA_DIR}/towers_$1.csv"
+	[ -e "${CSV}" ] && mv "${CSV}" "${CSV}.bak"
+  OPTS=""
+  [ $QUIET ] && OPTS="$OPTS -q"
+  wget $OPTS --output-document="${CSV}.gz" "$2"
+  MIME=`file -b --mime-type "$CSV.gz"`
+	if [ "${MIME}" != "application/gzip" -a "${MIME}" != "application/x-gzip" ]; then
+		echo "Download failed (got text instead of gzipped CSV)" 1>&2
+		exit 1
+	fi
+	gunzip "${CSV}.gz"
+}
+
+# Downloads towers_mozilla.csv
+# Usage: download_mozilla
+download_mozilla() {
+  msg 'Downloading cell tower data from Mozilla Location Services'
+	NOW=`date -u "+%Y-%m-%d"`
+	_download_from mozilla "https://d17pt8qph6ncyq.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
+}
+
+# Downloads towers_opencellid.csv
+# Usage: download_opencellid
+download_opencellid() {
+  msg 'Downloading cell tower data from OpenCellID'
+	if [ ! "${API_KEY}" ]; then
+		echo "Please set API_KEY to download OpenCellID data" 1>&2
+		exit
+	fi
+	_download_from opencellid "http://opencellid.org/downloads/?apiKey=${API_KEY}&filename=cell_towers.csv.gz"
+}
+
+download() {
+  download_mozilla
+  download_opencellid
+}
+

@@ -1,0 +1,58 @@
+#
+# Update remote git(hub) repository with lacells-creator results
+#
+# Make sure you've sourced `config` and `util` before running any function
+# when using this as a library.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+dogit() {
+  (cd "$LACELLS_GIT_DIR" && git $@)
+}
+
+splitcsv() {
+  rm -f $1_*
+  split -a1 -C50MB "$1.csv" "$1_"
+  rm -f "$1.csv"
+  for i in $1_*; do mv "$i" "$i.csv"; done
+}
+
+checkgit() {
+  # Make sure we have an up-to-date git repository
+  if [ ! -d "$LACELLS_GIT_DIR/.git" ]; then
+    echo "Please initialize a git repository in $LACELLS_GIT_DIR with a default remote" 1>&2
+    exit 1
+  fi
+  dogit pull
+  if [ $? -ne 0 ]; then
+    echo "Please make sure git pull works, or pushing won't work" 1>&2
+    exit 2
+  fi
+}
+
+# Push update to repository
+upload() {
+  # Update data files
+  rm -f "$LACELLS_GIT_DIR/lacells-*"
+  cp "$LACELLS_DIR"/lacells-* "$LACELLS_GIT_DIR/"
+
+  # Github doesn't like big files, split them.
+  splitcsv "$LACELLS_GIT_DIR/lacells-mcc_310"
+  splitcsv "$LACELLS_GIT_DIR/lacells-mcc_262"
+
+  # Commit and push changes
+  dogit add -A && \
+  dogit commit -m lacells-update && \
+  dogit push -q 2>&1 | grep -v 'remote: warning: \(GH001\|See\|.*this is larger than\)' 1>&2
+}
+
+# Main program
+if [ `basename $0` = upload-git ]; then
+  # expects to be run from misc/upload-github
+  PREFIX="`dirname $0`/.."
+  source "$PREFIX/lib/config"
+  source "$PREFIX/lib/util"
+  upload
+fi
+

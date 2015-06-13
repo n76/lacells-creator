@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Default configuration for lacells-creator
+#
+# This file must sourced when using any other shellscript library file.
+# Before sourcing this file, please set PREFIX to the source location.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+# Data directory
+DATA_DIR=.
+
+# Main lacells database
+LACELLS_DB="${DATA_DIR}/lacells.db"
+# Output directory with cell location CSVs per MCC
+LACELLS_DIR="${DATA_DIR}/lacells"
+
+# Git repository for uploading
+LACELLS_GIT_DIR="${DATA_DIR}/lacells.git"
+
+# OpenCellID API Key. Obviously, there is no default.
+#API_KEY=
+
