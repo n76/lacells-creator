@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Push lacells.db to Android device
+#
+# Make sure you've sourced `config` and `util` before running any function.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+lacells_push_now() {
+	msg 'Pushing database to phone'
+	adb push "$LACELLS_DB" /sdcard/.nogapps/lacells.db
+}
+
+lacells_push_ask() {
+	read -n 1 -p "Ready to push the database to your device? (y/n) " ready
+	echo
+	if [ "$ready" != "y" -o "$ready" = "Y" ]; then
+		echo "Not pushing the database. You can do so manually, executing"
+		echo "   adb push lacells.db /sdcard/.nogapps/lacells.db"
+		echo
+	else
+		lacells_push_now
+	fi
+}

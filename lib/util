@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# Utility functions
+#
+# Make sure you've sourced `config` before running any function.
+# This file must sourced when using any other shellscript library file.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+msg() {
+  [ -z $QUIET ] && echo "$@"
+}
+
+error() {
+  echo "Error: $@" 1>&2
+}
+

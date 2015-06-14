@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# Main script to download, import and export cell tower databases
+# from OpenCellID & Mozilla Location Service.
+#
+# You need to set API_KEY to an OpenCellID API key before downloading.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+PREFIX=`dirname $0`
+source "$PREFIX/lib/config"
+source "$PREFIX/lib/util"
+source "$PREFIX/lib/download"
+source "$PREFIX/lib/process"
+source "$PREFIX/lib/push"
+
+help() {
+  cat "$PREFIX/misc/usage.txt"
+  exit
+}
+
+ARGS=$(getopt -o dic:mpehq -l "download,import,filter-mcc:,merge,push,push-now,export,help,quiet" -n `basename $0` -- "$@")
+eval set -- "$ARGS"
+
+QUIET=
+ACTIONS=""
+FILTER="1=1"
+while true; do
+  case "$1" in
+    -d|--download)
+      ACTIONS="$ACTIONS download"
+      shift
+      ;;
+    -i|--import)
+      ACTIONS="$ACTIONS import"
+      shift
+      ;;
+    -c|--filter-mcc)
+      ACTIONS="$ACTIONS filter"
+      FILTER="$FILTER AND mcc IN ($2)"
+      shift 2
+      ;;
+    -m|--merge)
+      ACTIONS="$ACTIONS combine"
+      shift
+      ;;
+    -p|--push)
+      ACTIONS="$ACTIONS pushask"
+      shift
+      ;;
+    --push-now)
+      ACTIONS="$ACTIONS pushnow"
+      shift
+      ;;
+    -e|--export)
+      ACTIONS="$ACTIONS export"
+      shift
+      ;;
+    -h|--help)
+      help
+      shift
+      ;;
+    -q|--quiet)
+      QUIET=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+  esac
+done
+
+if [ -z "$ACTIONS" ]; then
+  error "Nothing to do, please supply an action."
+  help
+fi
+
+[[ "$ACTIONS" =~ download ]] && download
+if echo "$ACTIONS" | grep -q 'import\|filter\|combine\|export'; then
+  process "$ACTIONS"
+fi
+
+if [[ "$ACTIONS" =~ pushask ]]; then
+  lacells_push_ask
+else
+  [[ "$ACTIONS" =~ pushnow ]] && lacells_push_now
+fi

@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Convert lacells countries CSV file to geoJSON.
+#
+
+# header
+cat <<GEO
+{
+	"type": "FeatureCollection",
+	"features": [
+GEO
+
+IFS=,
+first=1
+read mcc country cells lng lat updated
+while read mcc country cells lng lat; do
+	country=`echo "$country" | sed 's/"//g'`
+	#updated=`LANG=en date -u -d @"$updated"`
+	[ "$first" -eq 1 ] || echo "		,"; first=0
+	cat <<GEO
+		{
+			"type": "Feature",
+			"properties": {
+				"Country": "$country",
+				"MCC": "$mcc",
+				"Cells": "$cells",
+				"marker-symbol": "circle",
+				"marker-size": "small"
+			},
+			"geometry": {
+				"type": "Point",
+				"coordinates": [$lng, $lat]
+			}
+		}
+GEO
+done
+
+# footer
+cat <<GEO
+	]
+}
+GEO
+
+# vim:noexpandtab:sw=4:ts=4:
+# (please keep the tabs, or else indented here-documents will break)

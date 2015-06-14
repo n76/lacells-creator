@@ -1,7 +1,7 @@
 .DS_Store
-gen_lacells_conf
 *.bak
-*.db
-*.csv
-*.gz
-
+/lacells.db
+/towers_*.csv
+/towers_*.csv.gz
+/lacells/
+/lacells.git/

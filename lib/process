@@ -1,0 +1,214 @@
+#!/bin/bash
+#
+# Build cell tower databases from OpenCellID & Mozilla Location Service
+#
+# These can be imported into a microg/nogapps network location provider app.
+# Make sure you've sourced `config` and `util` before running any function.
+#
+# Licensed under GPLv3 or later
+# (c)2015 wvengen & n76
+
+# Run sqlite on database
+dosqlite() {
+	# +hack to get rid of `PRAGMA journal_mode` emitting 'off'.
+	sqlite3 "$LACELLS_DB" | grep --line-buffer -v '^off$'
+}
+
+# Helper function to print message when run as sql
+gensql_msg() {
+	[ $QUIET ] || echo ".print \"$@\""
+}
+
+# Generates SQL for importing and processing cell tower CSVs
+# Usage: gensql_import <source1> [<source2> [...]]
+gensql_import() {
+	cat <<-EOS
+		CREATE TABLE cells (
+			mcc INTEGER,
+			mnc INTEGER,
+			lac INTEGER,
+			cid INTEGER,
+			longitude REAL,
+			latitude REAL,
+			altitude REAL,
+			accuracy REAL,
+			samples INTEGER
+		);
+		CREATE TEMP TABLE cells_import (
+			radio TEXT,
+			mcc INTEGER,
+			mnc INTEGER,
+			lac INTEGER,
+			cid INTEGER,
+			unit STRING,
+			lng NUMERIC,
+			lat NUMERIC,
+			range INTEGER,
+			samples INTEGER,
+			changeable BOOLEAN,
+			created INTEGER,
+			updated INTEGER,
+			avgSignal INTEGER
+		);
+		.header on
+		.mode csv
+	EOS
+	for src in $@; do
+		cat <<-EOS
+			`gensql_msg "Importing ${src} cell data"`
+			.import "$DATA_DIR/towers_${src}.csv" cells_import
+			DELETE FROM cells_import WHERE radio = 'radio' AND unit = 'unit';
+			INSERT INTO cells SELECT
+				mcc, mnc, lac, cid, lng AS longitude, lat AS latitude,
+				-1 AS altitude, range AS accuracy, samples
+				FROM cells_import;
+			DELETE FROM cells_import;
+		EOS
+	done
+	cat <<-EOS
+		UPDATE cells SET accuracy=500 WHERE accuracy < 500;
+		UPDATE cells SET accuracy=100000 WHERE accuracy > 100000;
+		UPDATE cells SET samples=1 WHERE samples IS NULL OR samples < 1;
+
+		CREATE INDEX _idx1 ON cells (mcc, mnc, lac, cid);
+		CREATE INDEX _idx2 ON cells (lac, cid);
+	EOS
+}
+
+# Generates SQL to remove cells matching the expression
+# Usage: gensql_filter <WHERE-clause>
+gensql_filter() {
+	cat <<-EOS
+		`gensql_msg "Filtering rows"`
+		DELETE FROM cells WHERE NOT ($1);
+	EOS
+}
+
+# Generates SQL to combine cells observed multiple times (from different sources)
+# Usage: gensql_combine
+gensql_combine() {
+	cat <<-EOS
+		`gensql_msg "Merging cell towers"`
+		CREATE TEMP TABLE cells_merged (
+			mcc INTEGER,
+			mnc INTEGER,
+			lac INTEGER,
+			cid INTEGER,
+			longitude REAL,
+			latitude REAL,
+			altitude REAL,
+			accuracy REAL,
+			samples INTEGER
+		);
+		-- compute combined cells
+		INSERT INTO cells_merged SELECT
+				mcc, mnc, lac, cid,
+				SUM(longitude * samples) / SUM(samples) AS longitude,
+				SUM(latitude * samples) / SUM(samples) AS latitude,
+				SUM(altitude * samples) / SUM(samples) AS altitude,
+				SUM(accuracy * samples) / SUM(samples) AS accuracy,
+				SUM(samples) AS samples
+			FROM cells
+			GROUP BY mcc, mnc, lac, cid
+			HAVING COUNT(*) > 1;
+		-- remove original cells when there are merged ones
+		CREATE INDEX _idx1_merged ON cells_merged (mcc, mnc, lac, cid);
+		DELETE FROM cells WHERE
+		  EXISTS(
+		    SELECT 1 FROM cells_merged cm WHERE
+				cells.mcc = cm.mcc AND cells.mnc = cm.mnc AND
+				cells.lac = cm.lac AND cells.cid = cm.cid
+				LIMIT 1
+		  );
+		-- and add merged cells back to cells
+		INSERT INTO cells SELECT * FROM cells_merged;
+		DROP TABLE cells_merged;
+	EOS
+}
+
+# Generates SQL to output a countries file
+# Usage: gensql_export_countries <countries.csv>
+gensql_export_countries() {
+	mkdir -p "`dirname $1`"
+	cat <<-EOS
+		`gensql_msg "Exporting countries to $1"`
+		CREATE TEMP TABLE mccs (
+			mcc INTEGER,
+			country TEXT
+		);
+		.header on
+		.mode csv
+		.import "$PREFIX/misc/mccs.csv" mccs
+		DELETE FROM mccs WHERE country = 'country';
+		.output "$1"
+		SELECT  cells.mcc, mccs.country,
+				COUNT(*) AS cells,
+				SUM(longitude * samples) / SUM(samples) AS longitude,
+				SUM(latitude * samples) / SUM(samples) AS latitude
+			FROM cells, mccs
+			WHERE cells.mcc = mccs.mcc
+			GROUP BY cells.mcc
+			ORDER BY mccs.country;
+		.output stdout
+	EOS
+}
+
+# Generates SQL to export lacells CSV for each MCC
+# Usage: gensql_export_mccs <countries.csv> <outdir>
+gensql_export_mccs() {
+	gensql_msg "Exporting CSV files for each MCC to $2"
+	mkdir -p "$2"
+	MCCS=`tail -n +2 "$1" | sed 's/,.*$//' | sort | uniq`
+	for MCC in $MCCS; do
+		FILE=`printf "lacells-mcc_%03d.csv" "${MCC}"`
+		cat <<-EOS
+			.header on
+			.mode csv
+			.output "$2/${FILE}"
+			SELECT mcc, mnc, lac, cid, longitude, latitude, altitude, accuracy, samples
+				FROM cells
+				WHERE mcc = '${MCC}'
+				ORDER BY mcc, mnc, lac, cid;
+			.output stdout
+		EOS
+	done
+}
+
+# Remove lacells database (and keep backup)
+process_clean() {
+	if [ -e "$LACELLS_DB" ]; then
+		mv -f "$LACELLS_DB" "$LACELLS_DB.bak"
+	fi
+}
+
+# Processes all downloads and generates merged database
+# Usage: process <actions>
+# where <actions> is one or more of: import combine export
+process() {
+	[[ $1 =~ import ]] && process_clean
+
+	SOURCES=`ls "$DATA_DIR"/towers_*.csv | sed 's/^.*\/towers_\(.*\)\.csv$/\1/'`
+	dosqlite <<-EOS
+		PRAGMA synchronous = OFF;
+		PRAGMA journal_mode = OFF;
+		`[[ $1 =~ import  ]] && gensql_import ${SOURCES}`
+		`[[ $1 =~ filter  ]] && gensql_filter "${FILTER}"`
+		`[[ $1 =~ combine ]] && gensql_combine`
+		`[[ $1 =~ export  ]] && gensql_export_countries "$LACELLS_DIR/lacells-countries.csv"`
+	EOS
+	# need a break here because gensql_export_mccs needs to read an earlier generated file
+	dosqlite <<-EOS
+		PRAGMA synchronous = OFF;
+		PRAGMA journal_mode = OFF;
+		`[[ $1 =~ export  ]] && gensql_export_mccs "$LACELLS_DIR/lacells-countries.csv" "$LACELLS_DIR"`
+		VACUUM;
+	EOS
+
+	if [[ $1 =~ export ]]; then
+		msg "Generating countries geojson in $LACELLS_DIR/lacells-countries-geojson"
+		"$PREFIX/misc/countries2geojson" <"$LACELLS_DIR/lacells-countries.csv" >"$LACELLS_DIR/lacells-countries.geojson"
+	fi
+}
+
+# vim:noexpandtab:sw=4:ts=4:
+# (please keep the tabs, or else indented here-documents will break)
