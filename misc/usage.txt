@@ -11,9 +11,10 @@ Options:
           Import towers_(...).csv into the lacells.db file. When lacells.db
           is already present, it is moved to lacells.db.bak first.
 
-  -c <MCC>, --filter-mcc <MCC>
+  -c[<MCC>], --filter-mcc[=<MCC>]
           Only keep records in lacells.db that have the specified MCC
           (mobile country code). Use comma-separated list for multiple.
+          When no MCCs are given, the default configuration's MCC is used.
 
   -m, --merge
           Merge records from duplicate cell towers in lacells.db.
@@ -50,11 +51,11 @@ Configuration:
 Examples:
 
   Download, import, filter on Zimbabwe, merge and push to mobile:
-     API_KEY=xxx ./lacells-creator -d -i -c 648 -m -p
+     API_KEY=xxx ./lacells-creator -d -i -c648 -m -p
 
   With files downloaded before, generate lacells.db for India:
-    ./lacells-creator -i -c 404,405 -m
+    ./lacells-creator -i -c404,405 -m
 
   Generate CSV files for a number of countries:
-    ./lacells-creator -i -c 605,641,645,748 -e
+    ./lacells-creator -i -c605,641,645,748 -e
 
