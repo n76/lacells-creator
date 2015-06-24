@@ -3,7 +3,7 @@
 # Build cell tower databases from OpenCellID & Mozilla Location Service
 #
 # These can be imported into a microg/nogapps network location provider app.
-# Make sure you've sourced `config` and `util` before running any function.
+# Make sure you've sourced `config` and `util` and run `config_default`.
 #
 # Licensed under GPLv3 or later
 # (c)2015 wvengen & n76

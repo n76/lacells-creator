@@ -20,12 +20,20 @@ help() {
   exit
 }
 
-ARGS=$(getopt -o dic:mpehq -l "download,import,filter-mcc:,merge,push,push-now,export,help,quiet" -n `basename $0` -- "$@")
-eval set -- "$ARGS"
-
+# Variables first so that settings could override them, even though this is
+# unsupported because they can change in future versions.
 QUIET=
 ACTIONS=""
 FILTER="1=1"
+
+# Read default configuration files, then those specified on the command-line.
+config_default "$PREFIX"
+config_from_options $@
+
+# Parse command-line arguments (after settings so they can be overridden).
+ARGS=$(getopt -o dic:mpeC:hq -l "download,import,filter-mcc:,merge,push,push-now,export,config:,help,quiet" -n `basename $0` -- "$@")
+eval set -- "$ARGS"
+
 while true; do
   case "$1" in
     -d|--download)
@@ -56,6 +64,10 @@ while true; do
     -e|--export)
       ACTIONS="$ACTIONS export"
       shift
+      ;;
+    -C|--config)
+      # already handled in first pass
+      shift 2
       ;;
     -h|--help)
       help

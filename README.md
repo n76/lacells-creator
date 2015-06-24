@@ -49,7 +49,19 @@ Please note that you can only download the OpenCellID database once per day.
 
 ### Keeping your settings
 
-If you don't want to type the full command over and over again, you can create a simple script in the same directory that you can run instead. Open a text file, and put in the full command preceded by a shebang line:
+To keep you from having to type your `API_KEY` or MCCs each time, this can be specified in a configuration file. It might contain
+
+    API_KEY=xxxx
+    MCC=404,405
+
+Store this as `creator.cfg` in the same directory as the script, or in `~/.config/lacells/creator.cfg`. The script will then pick up these defaults automatically (but you can still override the MCCs on the command-line).
+
+If you'd like to use multiple configurations, please look at the command-line option `-C` or `--config`.
+
+
+### Using your own script
+
+To automate it even further, you could create a simple script in the same directory that you can run instead. Open a text file, and put in the full command preceded by a shebang line:
 
     #!/bin/sh
     API_KEY=xxx ./lacells-creator -d -i -c 404,405 -m -p

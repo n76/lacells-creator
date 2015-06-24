@@ -26,11 +26,26 @@ Options:
           Export lacells.db to CSVs per MCC to lacells/lacells-mcc_xxx.csv
           and a country summary in lacells/lacells-countries.{csv,geojson}.
 
+  -C <file>, --config <file>
+          Read configuration file. If this option appears multiple times,
+          files are loaded in order, before all other command-line options.
+
   -h, --help
           Show this help message.
 
   -q, --quiet
           Don't tell what's happening, only report errors.
+
+Configuration:
+
+  The default user configuration is read from ~/.config/lacells/creator.cfg
+  and the file gen_lacells_conf or creator.cfg in the script's location.
+  After that, any configuration files specified on the command-line are read.
+
+  A configuration file can set variables in use by the script. Usually, you
+  would set API_KEY to the OpenCellID's key, and MCC to a comma-separated
+  list of mobile country codes.
+  For all possible options, please see misc/creator.cfg.
 
 Examples:
 

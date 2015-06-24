@@ -1,7 +1,7 @@
 #
 # Update remote git(hub) repository with lacells-creator results
 #
-# Make sure you've sourced `config` and `util` before running any function
+# Make sure you've sourced `config` and `util` and run `config_default`
 # when using this as a library.
 #
 # Licensed under GPLv3 or later
@@ -49,10 +49,11 @@ upload() {
 
 # Main program
 if [ `basename $0` = upload-git ]; then
-  # expects to be run from misc/upload-github
+  # expects to be run from misc/upload-git
   PREFIX="`dirname $0`/.."
   source "$PREFIX/lib/config"
   source "$PREFIX/lib/util"
+  config_default "$PREFIX"
   upload
 fi
 
