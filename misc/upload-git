@@ -57,3 +57,4 @@ if [ `basename $0` = upload-git ]; then
   upload
 fi
 
+exit 0

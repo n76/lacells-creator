@@ -115,3 +115,5 @@ if [[ "$ACTIONS" =~ pushask ]]; then
 else
   [[ "$ACTIONS" =~ pushnow ]] && lacells_push_now
 fi
+
+exit 0
