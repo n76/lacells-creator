@@ -54,6 +54,7 @@ if [ `basename $0` = upload-git ]; then
   source "$PREFIX/lib/config"
   source "$PREFIX/lib/util"
   config_default "$PREFIX"
+  config_from_options $@
   upload
 fi
 
