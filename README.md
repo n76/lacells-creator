@@ -21,7 +21,7 @@ The [Local-GSM-Backend](https://github.com/n76/Local-GSM-Backend) is a replaceme
 
 The main program is `lacells-creator`. To get a fresh file on your mobile phone, the program needs to download source files, process them, and upload to the phone. This can all be done by `lacells-creator` as follows:
 
-    API_KEY=xxx ./lacells-creator -d -i -c 648 -m -p
+    API_KEY=xxx ./lacells-creator -d -i -c648 -m -p
 
 The `API_KEY` is your OpenCellID API key, and 648 is the mobile country code (MCC). The full database is several gigabytes in size, so it's usually a good idea to select only the countries you're interested in. Multiple countries can be separated by comma's. You can lookup country codes in [misc/mccs.csv](misc/mccs.csv) or on [Wikipedia](https://en.wikipedia.org/wiki/Mobile_country_code).
 
@@ -64,7 +64,7 @@ If you'd like to use multiple configurations, please look at the command-line op
 To automate it even further, you could create a simple script in the same directory that you can run instead. Open a text file, and put in the full command preceded by a shebang line:
 
     #!/bin/sh
-    API_KEY=xxx ./lacells-creator -d -i -c 404,405 -m -p
+    API_KEY=xxx ./lacells-creator -d -i -c404,405 -m -p
 
 Make this file executable (`chmod +x <filename>`), and then you can run that command to do the full cycle of downloading, processing, uploading.
 
