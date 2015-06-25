@@ -2,7 +2,7 @@
 #
 # Push lacells.db to Android device
 #
-# Make sure you've sourced `config` and `util` before running any function.
+# Make sure you've sourced `config` and `util` and run `config_default`.
 #
 # Licensed under GPLv3 or later
 # (c)2015 wvengen & n76

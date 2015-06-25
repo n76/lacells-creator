@@ -20,12 +20,21 @@ help() {
   exit
 }
 
-ARGS=$(getopt -o dic:mpehq -l "download,import,filter-mcc:,merge,push,push-now,export,help,quiet" -n `basename $0` -- "$@")
+# Variables first so that settings could override them, even though this is
+# unsupported because they may change in future versions.
+MCC=
+QUIET=
+ACTIONS=
+FILTER="1=1"
+
+# Read default configuration files, then those specified on the command-line.
+config_default "$PREFIX"
+config_from_options $@
+
+# Parse command-line arguments (after settings so they can be overridden).
+ARGS=$(getopt -o dic::mpeC:hq -l "download,import,filter-mcc::,merge,push,push-now,export,config:,help,quiet" -n `basename $0` -- "$@")
 eval set -- "$ARGS"
 
-QUIET=
-ACTIONS=""
-FILTER="1=1"
 while true; do
   case "$1" in
     -d|--download)
@@ -38,7 +47,7 @@ while true; do
       ;;
     -c|--filter-mcc)
       ACTIONS="$ACTIONS filter"
-      FILTER="$FILTER AND mcc IN ($2)"
+      [ "$2" ] && MCC="$2"
       shift 2
       ;;
     -m|--merge)
@@ -57,6 +66,10 @@ while true; do
       ACTIONS="$ACTIONS export"
       shift
       ;;
+    -C|--config)
+      # already handled in first pass
+      shift 2
+      ;;
     -h|--help)
       help
       shift
@@ -72,10 +85,25 @@ while true; do
   esac
 done
 
+# Pre-process variables
+
+if [ "$MCC" ]; then
+  FILTER="$FILTER AND mcc IN ($MCC)"
+fi
+
+# Check actions
+
 if [ -z "$ACTIONS" ]; then
   error "Nothing to do, please supply an action."
   help
 fi
+
+if [[ "$ACTIONS" =~ filter ]] && [ ! "$MCC" ]; then
+  echo "Please give one or more MCCs to filter." 1>&2
+  exit 1
+fi
+
+# Execute actions
 
 [[ "$ACTIONS" =~ download ]] && download
 if echo "$ACTIONS" | grep -q 'import\|filter\|combine\|export'; then
@@ -87,3 +115,5 @@ if [[ "$ACTIONS" =~ pushask ]]; then
 else
   [[ "$ACTIONS" =~ pushnow ]] && lacells_push_now
 fi
+
+exit 0

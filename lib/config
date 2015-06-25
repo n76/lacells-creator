@@ -1,24 +1,50 @@
 #!/bin/bash
 #
-# Default configuration for lacells-creator
-#
-# This file must sourced when using any other shellscript library file.
-# Before sourcing this file, please set PREFIX to the source location.
+# Read and parse lacells configuration
 #
 # Licensed under GPLv3 or later
-# (c)2015 wvengen & n76
+# (c)2015 wvengen
 
-# Data directory
-DATA_DIR=.
+# read configuration files from options
+config_from_options() {
+  local ARGS
+  ARGS=$(getopt -q -o C: -l config: -- "$@")
+  eval set -- "$ARGS"
+  while true; do
+    case "$1" in
+      -C|--config)
+        config_read "$2"
+        shift
+        ;;
+      --)
+        break
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+}
 
-# Main lacells database
-LACELLS_DB="${DATA_DIR}/lacells.db"
-# Output directory with cell location CSVs per MCC
-LACELLS_DIR="${DATA_DIR}/lacells"
+# read configuration file given
+config_read() {
+  if [ -r "$1" ]; then
+    source "$1"
+  else
+    echo "WARNING: Cannot read configuration file '$1', skipped." 1>&2
+  fi
+}
 
-# Git repository for uploading
-LACELLS_GIT_DIR="${DATA_DIR}/lacells.git"
+# read configuration file given when it exists
+config_try_read() {
+  [ -e "$1" ] && config_read "$1"
+}
 
-# OpenCellID API Key. Obviously, there is no default.
-#API_KEY=
+# read default configuration files; give PREFIX as argument
+config_default() {
+  config_read "$1/misc/creator.cfg"
+  config_try_read "${XDG_CONFIG_HOME:-$HOME/.config}/lacells/creator.cfg"
+  config_try_read "$1/gen_lacells_conf"
+  config_try_read "$1/creator.cfg"
+}
 
