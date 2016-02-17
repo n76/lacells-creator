@@ -7,6 +7,9 @@ The μg Project at https://github.com/microg is building a number of open source
 
 The [Local-GSM-Backend](https://github.com/n76/Local-GSM-Backend) is a replacement for microg's GSM-based location backend that allows importing from a CSV file. This script generates these CSV files on a per-country basis, the aim is that they can be downloaded easily from its settings screen.
 
+### NOTE: This set of scripts is not being actively supported. Please note the following:
+1. There is a faster script for generating the database located at https://github.com/sobrus/FastLacellsGenerator
+2. Recent versions of the Local GSM location backend now save their database within the application data area to reduce the privileges needed. This script still pushes to the old nogapps directory and will need to be modified to put the database where it will actually be used.
 
 ### Requirements
 
