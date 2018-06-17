@@ -40,11 +40,11 @@ download_opencellid() {
 		echo "Please set API_KEY to download OpenCellID data" 1>&2
 		exit
 	fi
-	_download_from opencellid "http://opencellid.org/downloads/?apiKey=${API_KEY}&filename=cell_towers.csv.gz"
+	_download_from opencellid "https://opencellid.org/ocid/downloads?token=${API_KEY}&type=full&file=cell_towers.csv.gz"
 }
 
 download() {
-  download_mozilla
   download_opencellid
+  download_mozilla
 }
 
