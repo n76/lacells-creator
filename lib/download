@@ -29,7 +29,7 @@ _download_from() {
 download_mozilla() {
   msg 'Downloading cell tower data from Mozilla Location Services'
 	NOW=`date -u "+%Y-%m-%d"`
-	_download_from mozilla "https://d17pt8qph6ncyq.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
+	_download_from mozilla "https://d2koia3g127518.cloudfront.net/export/MLS-full-cell-export-${NOW}T000000.csv.gz"
 }
 
 # Downloads towers_opencellid.csv
@@ -38,9 +38,9 @@ download_opencellid() {
   msg 'Downloading cell tower data from OpenCellID'
 	if [ ! "${API_KEY}" ]; then
 		echo "Please set API_KEY to download OpenCellID data" 1>&2
-		exit
+	else
+		_download_from opencellid "https://opencellid.org/ocid/downloads?token=${API_KEY}&type=full&file=cell_towers.csv.gz"
 	fi
-	_download_from opencellid "https://opencellid.org/ocid/downloads?token=${API_KEY}&type=full&file=cell_towers.csv.gz"
 }
 
 download() {

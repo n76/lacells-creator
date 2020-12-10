@@ -9,7 +9,7 @@
 
 lacells_push_now() {
 	msg 'Pushing database to phone'
-	adb push "$LACELLS_DB" /sdcard/.nogapps/lacells.db
+	adb push "$LACELLS_DB" /sdcard/Android/data/org.fitchfamily.android.gsmlocation/files/lacells.db.new
 }
 
 lacells_push_ask() {
